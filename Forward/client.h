@@ -1,0 +1,16 @@
+#ifndef CLIENT_H
+#define CLIENT_H
+#include "network.h"
+#include "header.h"
+#include "globals.h"
+#include <QString>
+class Client
+{
+public:
+    Client();
+};
+void connectClient(int port, const char *IP);
+void requestUdp(QString fileName, QString destAddr, int destPort, int forwardPort);
+void requestFile(QString fileName, QString destAddr, int destPort, bool unknown);
+void * readThread(void * args);
+#endif // CLIENT_H
