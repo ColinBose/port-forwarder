@@ -14,6 +14,8 @@ struct forwardPorts{
     int sock = 0;
     char ip[15] = {0};
     int port;
+    SSL *ssl;
+    BIO *sbio;
 };
 struct sockData{
     int sock;
@@ -52,11 +54,23 @@ void connectServers(){
        QStringList parts = liner.split(" ");
        if(parts.length() == 1)
            continue;
-       int sock = connectTCPSocket(parts.at(1).toInt(), parts[0].toStdString().c_str());
+
+       // OpenSSL specific variables
+       SSL_CTX *sslctx;
+       SSL *ssl;
+       BIO *sbio;
+
+       // Build the SSL context
+       sslctx = initialize_ctx(CLT_KEYFILE, PASSWORD);
+       ssl = SSL_new(sslctx);
+
+       int sock = connectTCPSocketSSL(parts.at(1).toInt(), parts[0].toStdString().c_str(), ssl, sbio);
        if(sock != -1){
 
            portList[sock%MAXLIST].sock = sock;
            portList[sock%MAXLIST].val = getHash(parts[0], parts[1].toInt());
+           portList[sock%MAXLIST].ssl = ssl;
+           portList[sock%MAXLIST].sbio = sbio;
            if(parts[1][parts.length()-1] == '\n')
                parts[1] = parts[1].left(parts[1].length() - 1);
            QString wtf = parts[1];
@@ -211,7 +225,7 @@ void * pollThread(void * args){
             if(events[i].events & EPOLLIN){
                 zero(buffer, TRANSFERSIZE);
 
-                err = readSock(events[i].data.fd, TRANSFERSIZE, buffer);
+                err = readSockSSL(events[i].data.fd, TRANSFERSIZE, buffer, portList[events[i].data.fd%MAXLIST].ssl);
                 if(err <= 0){
                     QMetaObject::invokeMethod(mw, "removeNetwork", Q_ARG(QString, portList[events[i].data.fd%MAXLIST].ip), Q_ARG(int,portList[events[i].data.fd%MAXLIST].port ));
                     epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, events);
@@ -288,7 +302,7 @@ void * pollThread(void * args){
 
 
                 fillSrcIp(buffer, portList[events[i].data.fd%MAXLIST].ip);
-                sendData(passSock, buffer, TRANSFERSIZE);
+                sendDataSSL(passSock, buffer, TRANSFERSIZE, portList[events[i].data.fd%MAXLIST].ssl);
 
 
                     //sem_post(&readWait);

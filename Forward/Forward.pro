@@ -11,6 +11,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = Forward
 TEMPLATE = app
 
+LIBS += -I/usr/include/openssl -L/usr/local/lib -lssl -lcrypto -lm
 
 SOURCES += main.cpp\
         mainwindow.cpp \
