@@ -9,7 +9,22 @@ int retSock;
 int udpP;
 sem_t waitLock;
 EventHandler events;
+
+// OpenSSL
+SSL_CTX *sslctx;
+SSL *ssl;
+BIO *sbio;
+
 void startServer(int port, int udpPort){
+    // Build the SSL context
+    sslctx = initialize_ctx(SVR_KEYFILE, PASSWORD);
+    SSL_CTX_set_options(sslctx, SSL_OP_SINGLE_DH_USE);
+    generate_eph_rsa_key (sslctx);
+    SSL_CTX_set_session_id_context (
+        sslctx,
+        &s_server_session_id_context,
+        sizeof s_server_session_id_context);
+
     sockaddr_in  serv;
     udpP = udpPort;
     sem_init(&waitLock, 0,0);
@@ -44,11 +59,22 @@ void * listenThread(void * args){
         fprintf(stderr, "socket() failed: %s\n", strerror(errno));
         exit(1);
     }
+
+    sbio = BIO_new_socket (retSock, BIO_NOCLOSE);
+    ssl = SSL_new(sslctx);
+    SSL_set_bio (ssl, sbio, sbio);
+
+    int sslerr;
+    if (sslerr = SSL_accept (ssl) <= 0)
+        berr_exit("SSL Accept Error");
+
     int err;
     bool reading = true;
     char buffer[TRANSFERSIZE];
+    // TODO: might have to do specific SSL error checking instead of
+    // relying on regular socket errors?
     while(reading){
-        err = readSock(retSock, TRANSFERSIZE,buffer);
+        err = readSockSSL(retSock, TRANSFERSIZE,buffer, ssl);
         if(err == 0)
             break;
         printf("READ SOME DATA AT THE SERVER:::\n");
@@ -59,7 +85,6 @@ void * listenThread(void * args){
         memcpy(r.header,buffer, HEADERLEN);
         events.addEvent(r);
         sem_post(&waitLock);
-
     }
 }
 void * requestHandler(void * args){
@@ -102,7 +127,7 @@ void sendFile(char header[], char fName[]){
         addPackNum(sendBuffer, sent);
 
         sent++;
-        sendData(retSock, sendBuffer, TRANSFERSIZE);
+        sendDataSSL(retSock, sendBuffer, TRANSFERSIZE, ssl);
         if(s < (TRANSFERSIZE - HEADERLEN))
             break;
 

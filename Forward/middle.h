@@ -43,6 +43,7 @@ struct passInfo{
     passInfo(QString f, int s, int p, QString src) : fileName(f) , sock(s), srcPort(p), srcIp(src) {}
 };
 
+
 void * acceptThread(void * args);
 void * pollThread(void * args);
 void genFileList(char buffer[]);

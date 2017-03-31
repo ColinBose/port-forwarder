@@ -47,7 +47,6 @@ Network::Network()
 --
 -- NOTES: Call to send a buffer of data to the specified socket
 ----------------------------------------------------------------------------------------------------------------------*/
-
 int sendData(int socket, char * message, int buffSize){
     int err;
     err = write(socket, message, buffSize);
@@ -58,6 +57,18 @@ int sendData(int socket, char * message, int buffSize){
     }
     return err;
 }
+
+int sendDataSSL(int socket, char * message, int buffSize, SSL *ssl){
+    int err;
+    err = SSL_write(ssl, message, buffSize);
+    if(err < 0){
+        printf("Error writing::\n");
+        printf("socket() failed: %s\n", strerror(errno));
+        fflush(stdout);
+    }
+    return err;
+}
+
 /*------------------------------------------------------------------------------------------------------------------
 -- FUNCTION: connectTCPSocket
 --
@@ -122,8 +133,6 @@ int connectTCPSocket(int port, const char * ip){
 --
 -- NOTES: Call to read a specified amount of data from socket and stores it in buffer
 ----------------------------------------------------------------------------------------------------------------------*/
-
-
 int readSock(int sd, int buffSize, char * buff){
     int n;
     memset(buff, 0, TRANSFERSIZE);
@@ -152,6 +161,38 @@ int readSock(int sd, int buffSize, char * buff){
 
   return 1;
 }
+
+int readSockSSL(int sd, int buffSize, char * buff, SSL *ssl){
+    int n;
+    memset(buff, 0, TRANSFERSIZE);
+    //("Reading SOCKET: %d \n", sd);
+    //fflush(stdout);
+    int bytesLeft = buffSize;
+    while((n = SSL_read(ssl, buff, bytesLeft)) < buffSize){
+        int debug;
+        switch((debug = SSL_get_error(ssl, n))) {
+        case SSL_ERROR_NONE:
+            buff += n;
+            bytesLeft -= n;
+            if(bytesLeft ==0)
+                return 1;
+            break;
+        case SSL_ERROR_ZERO_RETURN:
+            fprintf(stderr, "first failed: %s %d TOTAL ERRS: %d\n", strerror(errno),errno, totalErrs++);
+            fflush(stdout);
+            return 0;
+            break;
+        default:
+            fprintf(stderr, "first failed: %s %d TOTAL ERRS: %d\n", strerror(errno),errno, totalErrs++);
+            fflush(stdout);
+            return 0;
+            break;
+        }
+   }
+
+  return 1;
+}
+
 /*------------------------------------------------------------------------------------------------------------------
 -- FUNCTION: setupListen
 --
@@ -292,4 +333,92 @@ int sendDataTo(int sd, int buffSize, char * buff, sockaddr_in * serveraddr){
 }
 void zero(char * buffer, int len){
     memset(buffer, '\0', len);
+}
+
+BIO *bio_err=0;
+static char *pass;
+
+void generate_eph_rsa_key (SSL_CTX *ctx)
+{
+    RSA *rsa;
+    rsa=RSA_generate_key(512,RSA_F4,NULL,NULL);
+    if (!SSL_CTX_set_tmp_rsa(ctx,rsa))
+        berr_exit("Couldn't set RSA key");
+
+    RSA_free(rsa);
+}
+
+/* A simple error and exit routine*/
+int err_exit(char *string)
+{
+    fprintf(stderr,"%s\n",string);
+    exit(0);
+}
+
+/* Print SSL errors and exit*/
+int berr_exit(char *string)
+{
+    BIO_printf(bio_err,"%s\n",string);
+    ERR_print_errors(bio_err);
+    exit(0);
+}
+
+/*The password code is not thread safe*/
+static int password_cb (char *buf, int num, int rwflag, void *userdata)
+{
+    if(num<strlen(pass)+1)
+      return(0);
+
+    strcpy(buf,pass);
+    return(strlen(pass));
+}
+
+static void sigpipe_handle (int x)
+{
+
+}
+
+SSL_CTX *initialize_ctx (char *keyfile, char *password)
+{
+    SSL_CTX *ctx;
+
+    if(!bio_err){
+      /* Global system initialization*/
+      SSL_library_init();
+      SSL_load_error_strings();
+
+      /* An error write context */
+      bio_err=BIO_new_fp(stderr,BIO_NOCLOSE);
+    }
+
+    /* Set up a SIGPIPE handler */
+    signal(SIGPIPE,sigpipe_handle);
+
+    /* Create our context*/
+    ctx=SSL_CTX_new( SSLv23_method() );
+
+    /* Load our keys and certificates*/
+    if(!(SSL_CTX_use_certificate_file(ctx,keyfile,SSL_FILETYPE_PEM)))
+      berr_exit("Couldn't read certificate file");
+
+    pass=password;
+    SSL_CTX_set_default_passwd_cb(ctx,password_cb);
+    if(!(SSL_CTX_use_PrivateKey_file(ctx,keyfile,SSL_FILETYPE_PEM)))
+      berr_exit("Couldn't read key file");
+
+    /* Load the CAs we trust*/
+    if(!(SSL_CTX_load_verify_locations(ctx,CA_LIST,0)))
+      berr_exit("Couldn't read CA list");
+    SSL_CTX_set_verify_depth(ctx,1);
+
+    /* Load randomness */
+    if(!(RAND_load_file(RANDOM,1024*1024)))
+      berr_exit("Couldn't load randomness");
+
+    return ctx;
+}
+
+void destroy_ctx(SSL_CTX *ctx)
+{
+    SSL_CTX_free(ctx);
 }
