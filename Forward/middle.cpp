@@ -9,14 +9,6 @@ Middle::Middle()
 {
 
 }
-struct forwardPorts{
-    int val = 0;
-    int sock = 0;
-    char ip[15] = {0};
-    int port;
-    SSL *ssl;
-    BIO *sbio;
-};
 struct sockData{
     int sock;
     char ip[15];
@@ -64,7 +56,13 @@ void connectServers(){
        sslctx = initialize_ctx(CLT_KEYFILE, PASSWORD);
        ssl = SSL_new(sslctx);
 
-       int sock = connectTCPSocketSSL(parts.at(1).toInt(), parts[0].toStdString().c_str(), ssl, sbio);
+       int sock = connectTCPSocket(parts.at(1).toInt(), parts[0].toStdString().c_str());
+       sbio = BIO_new_socket (sock, BIO_NOCLOSE);
+       SSL_set_bio (ssl, sbio, sbio);
+       if (SSL_connect (ssl) < 0) {
+           berr_exit ("SSL Connect Error!");
+       }
+
        if(sock != -1){
 
            portList[sock%MAXLIST].sock = sock;
@@ -224,8 +222,9 @@ void * pollThread(void * args){
             }
             if(events[i].events & EPOLLIN){
                 zero(buffer, TRANSFERSIZE);
+                SSL *tmp_ssl = portList[events[i].data.fd%MAXLIST].ssl;
 
-                err = readSockSSL(events[i].data.fd, TRANSFERSIZE, buffer, portList[events[i].data.fd%MAXLIST].ssl);
+                err = readSockSSL(events[i].data.fd, TRANSFERSIZE, buffer, tmp_ssl);
                 if(err <= 0){
                     QMetaObject::invokeMethod(mw, "removeNetwork", Q_ARG(QString, portList[events[i].data.fd%MAXLIST].ip), Q_ARG(int,portList[events[i].data.fd%MAXLIST].port ));
                     epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, events);

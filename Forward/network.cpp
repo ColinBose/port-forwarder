@@ -113,39 +113,6 @@ int connectTCPSocket(int port, const char * ip){
 
 }
 
-int connectTCPSocketSSL(int port, const char * ip, SSL *ssl, BIO *sbio){
-    int sock;
-    struct hostent  * host;
-    struct sockaddr_in server;
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1){
-        perror("Cannot create socket");
-        exit(1);
-    }
-    bzero((char *)&server, sizeof(struct sockaddr_in));
-    server.sin_family = AF_INET;
-    server.sin_port = htons(port);
-    if ((host = gethostbyname(ip)) == NULL){
-        fprintf(stderr, "Unknown server address\n");
-        exit(1);
-    }
-    bcopy(host->h_addr, (char *)&server.sin_addr, host->h_length);
-    if (connect (sock, (struct sockaddr *)&server, sizeof(server)) == -1){
-        fprintf(stderr, "Can't connect to server\n");
-        printf("socket() failed: %s\n", strerror(errno));
-
-        return -1;
-    }
-
-    sbio = BIO_new_socket (sock, BIO_NOCLOSE);
-    SSL_set_bio (ssl, sbio, sbio);
-    if (SSL_connect (ssl) < 0) {
-        berr_exit ("SSL Connect Error!");
-    }
-
-    return sock;
-
-}
-
 /*------------------------------------------------------------------------------------------------------------------
 -- FUNCTION: readSock
 --
@@ -201,25 +168,30 @@ int readSockSSL(int sd, int buffSize, char * buff, SSL *ssl){
     //("Reading SOCKET: %d \n", sd);
     //fflush(stdout);
     int bytesLeft = buffSize;
-    while((n = SSL_read(ssl, buff, bytesLeft)) < buffSize){
-        if(n == -1){
-            if(errno == EAGAIN)
-                continue;
-            fprintf(stderr, "first failed: %s %d TOTAL ERRS: %d\n", strerror(errno),errno, totalErrs++);
-            fflush(stdout);
+
+    while(1) {
+        n = SSL_read(ssl, buff, bytesLeft);
+        switch (SSL_get_error(ssl, n))
+        {
+        case SSL_ERROR_NONE:
+            buff += n;
+            bytesLeft -= n;
+            if(bytesLeft ==0)
+                return 1;
+            break;
+        case SSL_ERROR_ZERO_RETURN:
+            SSL_shutdown(ssl);
+            SSL_free(ssl);
+            //::close(sd);
+            berr_exit("SSL Zero Return");
             return 0;
-        }
-        if(n == 0){
+            break;
+        default:
+            berr_exit("SSL read problem");
             return 0;
-
-
+            break;
         }
-    buff += n;
-    bytesLeft -= n;
-    if(bytesLeft ==0)
-        return 1;
-
-  }
+    }
 
   return 1;
 }

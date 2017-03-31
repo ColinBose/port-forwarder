@@ -23,6 +23,7 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
+#include <openssl/crypto.h>
 //#define TRANSFERSIZE 1000
 #define STARTERLENGTH 200
 #define LISTSIZE 10000
@@ -47,7 +48,6 @@ int sendData(int socket, char * message, int buffsize);
 int sendDataSSL(int socket, char * message, int buffSize, SSL *ssl);
 int  setUdp(int port, const char * servIp, sockaddr_in * serveraddr);
 int connectTCPSocket(int port, const char *ip);
-int connectTCPSocketSSL(int port, const char * ip, SSL *ssl, BIO *sbio);
 int readSock(int sd, int buffSize, char * buff);
 int readSockSSL(int sd, int buffSize, char * buff, SSL *ssl);
 int sendDataTo(int sd, int buffSize, char * buff, sockaddr_in * serveraddr);
