@@ -27,14 +27,6 @@ class Middle
 public:
     Middle();
 };
-struct forwardPorts{
-    int val = 0;
-    int sock = 0;
-    char ip[15] = {0};
-    int port;
-    SSL *ssl;
-    BIO *sbio;
-};
 struct Files{
     QString fName;
     int sock;

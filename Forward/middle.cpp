@@ -9,6 +9,14 @@ Middle::Middle()
 {
 
 }
+struct forwardPorts{
+    int val = 0;
+    int sock = 0;
+    char ip[15] = {0};
+    int port;
+    SSL ssl;
+    BIO sbio;
+};
 struct sockData{
     int sock;
     char ip[15];
@@ -20,9 +28,21 @@ forwardPorts portList[MAXLIST];
 int totalPorts = 0;
 int epoll_fd;
 static struct epoll_event events[EPOLLMAX], event;
+SSL_CTX *sslctx3;
+SSL *ssl3;
+BIO *sbio3;
 
 
 void startForwarder(){
+    // Build the SSL context
+    sslctx3 = initialize_ctx(SVR_KEYFILE, PASSWORD);
+    SSL_CTX_set_options(sslctx3, SSL_OP_SINGLE_DH_USE);
+    generate_eph_rsa_key (sslctx3);
+    SSL_CTX_set_session_id_context (
+        sslctx3,
+        &s_server_session_id_context,
+        sizeof s_server_session_id_context);
+
     pthread_t accepterThread, pollerThread, udpReader;
     pthread_create(&accepterThread, NULL, acceptThread, (void *)0);
     pthread_create(&pollerThread, NULL, pollThread, (void *)0);
@@ -57,18 +77,20 @@ void connectServers(){
        ssl = SSL_new(sslctx);
 
        int sock = connectTCPSocket(parts.at(1).toInt(), parts[0].toStdString().c_str());
-       sbio = BIO_new_socket (sock, BIO_NOCLOSE);
-       SSL_set_bio (ssl, sbio, sbio);
-       if (SSL_connect (ssl) < 0) {
-           berr_exit ("SSL Connect Error!");
-       }
 
        if(sock != -1){
+           sbio = BIO_new_socket (sock, BIO_NOCLOSE);
+           SSL_set_bio (ssl, sbio, sbio);
+           if (SSL_connect (ssl) < 0) {
+               fprintf(stderr, "first failed: %s %d \n", strerror(errno),errno);
+
+               berr_exit ("SSL Connect Error!");
+           }
 
            portList[sock%MAXLIST].sock = sock;
            portList[sock%MAXLIST].val = getHash(parts[0], parts[1].toInt());
-           portList[sock%MAXLIST].ssl = ssl;
-           portList[sock%MAXLIST].sbio = sbio;
+           portList[sock%MAXLIST].ssl = *ssl;
+           portList[sock%MAXLIST].sbio = *sbio;
            if(parts[1][parts.length()-1] == '\n')
                parts[1] = parts[1].left(parts[1].length() - 1);
            QString wtf = parts[1];
@@ -161,6 +183,14 @@ void * acceptThread(void * args){
             exit(1);
         }
 
+        sbio3 = BIO_new_socket (someSock, BIO_NOCLOSE);
+        ssl3 = SSL_new(sslctx3);
+        SSL_set_bio (ssl3, sbio3, sbio3);
+
+        int sslerr;
+        if (sslerr = SSL_accept (ssl3) <= 0)
+            berr_exit("SSL Accept Error");
+
         if (fcntl (someSock, F_SETFL, O_NONBLOCK | fcntl(someSock, F_GETFL, 0)) == -1)
             fprintf(stderr, "socket() failed: %s %d\n", strerror(errno), errno);
 
@@ -176,12 +206,14 @@ void * acceptThread(void * args){
         portList[someSock%MAXLIST].val = getHash(QString(portList[someSock%MAXLIST].ip), DEFAULTPORT);
         portList[someSock%MAXLIST].sock = someSock;
         portList[someSock%MAXLIST].port = DEFAULTPORT;
+        portList[someSock%MAXLIST].ssl = *ssl3;
+        portList[someSock%MAXLIST].sbio = *sbio3;
         if (epoll_ctl (epoll_fd, EPOLL_CTL_ADD, someSock, &event) == -1)
             fprintf(stderr, "socket() failed: %s\n", strerror(errno));
 
         QMetaObject::invokeMethod(mw, "addClient", Q_ARG(QString, inet_ntoa(client.sin_addr)), Q_ARG(int, DEFAULTPORT));
         genFileList(fileBuffer);
-        sendData(someSock, fileBuffer, TRANSFERSIZE);
+        sendDataSSL(someSock, fileBuffer, TRANSFERSIZE, ssl3);
 
 
     }
@@ -222,9 +254,9 @@ void * pollThread(void * args){
             }
             if(events[i].events & EPOLLIN){
                 zero(buffer, TRANSFERSIZE);
-                SSL *tmp_ssl = portList[events[i].data.fd%MAXLIST].ssl;
+                SSL tmp_ssl = portList[events[i].data.fd%MAXLIST].ssl;
 
-                err = readSockSSL(events[i].data.fd, TRANSFERSIZE, buffer, tmp_ssl);
+                err = readSockSSL(events[i].data.fd, TRANSFERSIZE, buffer, &tmp_ssl);
                 if(err <= 0){
                     QMetaObject::invokeMethod(mw, "removeNetwork", Q_ARG(QString, portList[events[i].data.fd%MAXLIST].ip), Q_ARG(int,portList[events[i].data.fd%MAXLIST].port ));
                     epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, events);
@@ -301,7 +333,7 @@ void * pollThread(void * args){
 
 
                 fillSrcIp(buffer, portList[events[i].data.fd%MAXLIST].ip);
-                sendDataSSL(passSock, buffer, TRANSFERSIZE, portList[events[i].data.fd%MAXLIST].ssl);
+                sendDataSSL(passSock, buffer, TRANSFERSIZE, &portList[passSock%MAXLIST].ssl);
 
 
                     //sem_post(&readWait);
@@ -350,7 +382,7 @@ void * cachedSend(void * args){
             memcpy(sendBuffer+HEADERLEN, buffer+point, sLen);
             done = false;
         }
-        sendData(fSock, sendBuffer, TRANSFERSIZE);
+        sendDataSSL(fSock, sendBuffer, TRANSFERSIZE, &portList[fSock%MAXLIST].ssl);
         QMetaObject::invokeMethod(mw, "addPacket",  Q_ARG(QString, srcIp), Q_ARG(QString, portList[fSock].ip), Q_ARG(int, srcPort)
                 , Q_ARG(int,DEFAULTPORT), Q_ARG(bool, true));
 

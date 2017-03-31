@@ -168,11 +168,9 @@ int readSockSSL(int sd, int buffSize, char * buff, SSL *ssl){
     //("Reading SOCKET: %d \n", sd);
     //fflush(stdout);
     int bytesLeft = buffSize;
-
-    while(1) {
-        n = SSL_read(ssl, buff, bytesLeft);
-        switch (SSL_get_error(ssl, n))
-        {
+    while((n = SSL_read(ssl, buff, bytesLeft)) < buffSize){
+        int debug;
+        switch((debug = SSL_get_error(ssl, n))) {
         case SSL_ERROR_NONE:
             buff += n;
             bytesLeft -= n;
@@ -180,18 +178,17 @@ int readSockSSL(int sd, int buffSize, char * buff, SSL *ssl){
                 return 1;
             break;
         case SSL_ERROR_ZERO_RETURN:
-            SSL_shutdown(ssl);
-            SSL_free(ssl);
-            //::close(sd);
-            berr_exit("SSL Zero Return");
+            fprintf(stderr, "first failed: %s %d TOTAL ERRS: %d\n", strerror(errno),errno, totalErrs++);
+            fflush(stdout);
             return 0;
             break;
         default:
-            berr_exit("SSL read problem");
+            fprintf(stderr, "first failed: %s %d TOTAL ERRS: %d\n", strerror(errno),errno, totalErrs++);
+            fflush(stdout);
             return 0;
             break;
         }
-    }
+   }
 
   return 1;
 }

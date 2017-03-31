@@ -6,10 +6,29 @@ Client::Client()
 }
 int connectSock;
 
+SSL_CTX *sslctx2;
+SSL *ssl2;
+BIO *sbio2;
+
 void connectClient(int port, const char * IP){
     connectSock = connectTCPSocket(port, IP);
+
+    if (connectSock < 0) {
+        exit(0);
+    }
+    sslctx2 = initialize_ctx(CLT_KEYFILE, PASSWORD);
+    ssl2 = SSL_new(sslctx2);
+
+    sbio2 = BIO_new_socket (connectSock, BIO_NOCLOSE);
+    SSL_set_bio (ssl2, sbio2, sbio2);
+    if (SSL_connect (ssl2) < 0) {
+        fprintf(stderr, "first failed: %s %d \n", strerror(errno),errno);
+
+        berr_exit ("SSL Connect Error!");
+    }
+
     char retBuffer[TRANSFERSIZE];
-    readSock(connectSock, TRANSFERSIZE, retBuffer);
+    readSockSSL(connectSock, TRANSFERSIZE, retBuffer, ssl2);
     QString fList(retBuffer);
     QStringList parts = fList.split(" ");
     for(int i = 0; i < parts.length(); i++){
@@ -55,7 +74,7 @@ void requestFile(QString fileName, QString destAddr, int destPort, bool unknown)
     if(unknown){
         setUnknown(buffer);
     }
-    sendData(connectSock, buffer, TRANSFERSIZE);
+    sendDataSSL(connectSock, buffer, TRANSFERSIZE, ssl2);
     pthread_t reader;
     pthread_create(&reader, NULL, readThread, (void*)0);
   //  readSock(connectSock,  TRANSFERSIZE, buffer);
@@ -74,7 +93,7 @@ void * readThread(void * args){
         exit(1);
     }
 
-    readSock(connectSock, TRANSFERSIZE, retBuffer);
+    readSockSSL(connectSock, TRANSFERSIZE, retBuffer, ssl2);
     fSize = getHeaderSize(retBuffer);
     if(fSize < DATASIZE){
         fwrite(retBuffer+HEADERLEN, sizeof(char), fSize, outFile);
@@ -87,7 +106,7 @@ void * readThread(void * args){
     }
     totalWrite += DATASIZE;
     while(1){
-        readSock(connectSock, TRANSFERSIZE, retBuffer);
+        readSockSSL(connectSock, TRANSFERSIZE, retBuffer, ssl2);
         totalWrite += DATASIZE;
         if(totalWrite > fSize){
             fwrite(retBuffer+HEADERLEN, sizeof(char), fSize -(totalWrite-DATASIZE), outFile);

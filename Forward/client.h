@@ -4,6 +4,11 @@
 #include "header.h"
 #include "globals.h"
 #include <QString>
+#include <openssl/bio.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/rand.h>
+#include <openssl/crypto.h>
 class Client
 {
 public:
