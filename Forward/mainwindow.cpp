@@ -61,7 +61,22 @@ void MainWindow::on_startForward_clicked()
     startForwarder();
 }
 void MainWindow::setTextView(QString s){
+    ui->webViewer->clear();
     ui->webViewer->setText(s);
+}
+void MainWindow::setImageView(QString s) {
+    QUrl Uri (QString ( "./outFile" ));
+    QImage image = QImage("./outFile");
+
+    ui->webViewer->clear();
+    QTextDocument * textDocument = ui->webViewer->document();
+    textDocument->addResource( QTextDocument::ImageResource, Uri, QVariant ( image ) );
+    QTextCursor cursor = ui->webViewer->textCursor();
+    QTextImageFormat imageFormat;
+    imageFormat.setWidth( image.width() );
+    imageFormat.setHeight( image.height() );
+    imageFormat.setName( Uri.toString() );
+    cursor.insertImage(imageFormat);
 }
 
 void MainWindow::on_startClient_clicked()
@@ -92,7 +107,7 @@ void MainWindow::removeNetwork(QString ip, int port){
 
 void MainWindow::on_getData_clicked()
 {
-    requestFile("w1", ui->clientDestIp->text(), ui->clientDestPort->text().toInt(), false);
+    requestFile("w1", ui->clientDestIp->text(), "", ui->clientDestPort->text().toInt(), false);
 
 }
 void MainWindow::setHeaders(){
@@ -396,11 +411,12 @@ void MainWindow::on_secondGo_clicked()
 
     QString fileName = ui->fileWidget->item(row, 0)->text();
 
-    QString dstIp, dstPort;
+    QString dstIp, dstPort, fileType;
     dstIp = ui->clientForwardIP->text();
     dstPort = ui->clientDestPort->text();
-    requestFile(fileName, dstIp, dstPort.toInt(), true);
+    fileType = ui->fileWidget->item(row, 1)->text();
 
+    requestFile(fileName, dstIp, fileType, dstPort.toInt(), true);
 }
 
 void MainWindow::on_pushButton_clicked()

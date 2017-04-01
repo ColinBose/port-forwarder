@@ -16,6 +16,6 @@ public:
 };
 void connectClient(int port, const char *IP);
 void requestUdp(QString fileName, QString destAddr, int destPort, int forwardPort);
-void requestFile(QString fileName, QString destAddr, int destPort, bool unknown);
+void requestFile(QString fileName, QString destAddr, QString fileType, int destPort, bool unknown);
 void * readThread(void * args);
 #endif // CLIENT_H

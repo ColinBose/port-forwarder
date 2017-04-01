@@ -61,7 +61,7 @@ void requestUdp(QString fileName, QString destAddr, int destPort, int forwardPor
 
 }
 
-void requestFile(QString fileName, QString destAddr, int destPort, bool unknown){
+void requestFile(QString fileName, QString destAddr, QString fileType, int destPort, bool unknown){
     char buffer[TRANSFERSIZE];
     zero(buffer, TRANSFERSIZE);
     char src[15];
@@ -76,17 +76,18 @@ void requestFile(QString fileName, QString destAddr, int destPort, bool unknown)
     }
     sendDataSSL(connectSock, buffer, TRANSFERSIZE, ssl2);
     pthread_t reader;
-    pthread_create(&reader, NULL, readThread, (void*)0);
+    pthread_create(&reader, NULL, readThread, (void*)&fileType);
   //  readSock(connectSock,  TRANSFERSIZE, buffer);
     printf("Received a response\n");
     fflush(stdout);
 }
 void * readThread(void * args){
+    QString& fileType = *(QString *)args;
     int fSize;
     char retBuffer[TRANSFERSIZE];
     FILE * outFile;
     int totalWrite = 0;
-    outFile = fopen("outFile", "w");
+    outFile = fopen("outFile", "w+");
     if(outFile == NULL){
         printf("ERROR OPENING FILE;;;QUITING");
         fflush(stdout);
@@ -113,9 +114,12 @@ void * readThread(void * args){
             break;
         }
         fwrite(retBuffer+HEADERLEN, sizeof(char), DATASIZE, outFile);
-
-
     }
     fclose(outFile);
+
+    if (QString::compare(fileType, QString("image"), Qt::CaseInsensitive) == 0) {
+        QMetaObject::invokeMethod(mw, "setImageView", Q_ARG(QString, retBuffer+ HEADERLEN));
+    }
+
     return(void*)0;
 }
