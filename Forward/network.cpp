@@ -170,6 +170,11 @@ int readSockSSL(int sd, int buffSize, char * buff, SSL *ssl){
     int bytesLeft = buffSize;
     while((n = SSL_read(ssl, buff, bytesLeft)) < buffSize){
         int debug;
+        if(n == 0){
+            if(errno == EAGAIN)
+                continue;
+            return 0;
+        }
         switch((debug = SSL_get_error(ssl, n))) {
         case SSL_ERROR_NONE:
             buff += n;
@@ -182,15 +187,10 @@ int readSockSSL(int sd, int buffSize, char * buff, SSL *ssl){
             fflush(stdout);
             return 0;
             break;
+        case SSL_RECEIVED_SHUTDOWN:
+            return 0;
+            break;
         default:
-           // fprintf(stderr, "first failed: %s %d TOTAL ERRS: %d\n", strerror(errno),errno, totalErrs++);
-           // fflush(stdout);
-           // return 0;
-           if(errno == EWOULDBLOCK)
-               continue;
-           if(errno == EAGAIN)
-               continue;
-           return 0;
             break;
         }
    }
