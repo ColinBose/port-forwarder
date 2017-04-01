@@ -130,26 +130,28 @@ void * readThread(void * args){
     if(fSize < DATASIZE){
         fwrite(retBuffer+HEADERLEN, sizeof(char), fSize, outFile);
         fclose(outFile);
-        QMetaObject::invokeMethod(mw, "setTextView", Q_ARG(QString, retBuffer+ HEADERLEN));
-        return(void*)0;
+        //return(void*)0;
     }
     else{
         fwrite(retBuffer+HEADERLEN, sizeof(char), DATASIZE, outFile);
-    }
-    totalWrite += DATASIZE;
-    while(1){
-        readSockSSL(connectSock, TRANSFERSIZE, retBuffer, ssl2);
+
         totalWrite += DATASIZE;
-        if(totalWrite > fSize){
-            fwrite(retBuffer+HEADERLEN, sizeof(char), fSize -(totalWrite-DATASIZE), outFile);
-            break;
+        while(1){
+            readSockSSL(connectSock, TRANSFERSIZE, retBuffer, ssl2);
+            totalWrite += DATASIZE;
+            if(totalWrite > fSize){
+                fwrite(retBuffer+HEADERLEN, sizeof(char), fSize -(totalWrite-DATASIZE), outFile);
+                break;
+            }
+            fwrite(retBuffer+HEADERLEN, sizeof(char), DATASIZE, outFile);
         }
-        fwrite(retBuffer+HEADERLEN, sizeof(char), DATASIZE, outFile);
+        fclose(outFile);
     }
-    fclose(outFile);
 
     if (QString::compare(fileType, QString("image"), Qt::CaseInsensitive) == 0) {
         QMetaObject::invokeMethod(mw, "setImageView", Q_ARG(QString, retBuffer+ HEADERLEN));
+    } else {
+        QMetaObject::invokeMethod(mw, "setTextView", Q_ARG(QString, retBuffer+ HEADERLEN));
     }
 
     return(void*)0;

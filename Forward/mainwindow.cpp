@@ -110,7 +110,11 @@ void MainWindow::on_startForward_clicked()
 }
 void MainWindow::setTextView(QString s){
     ui->webViewer->clear();
-    ui->webViewer->setText(s);
+    QFile f("./outFile");
+    if (!f.open(QFile::ReadOnly | QFile::Text))
+        return;
+    QTextStream in(&f);
+    ui->webViewer->setText(in.readAll());
 }
 void MainWindow::setImageView(QString s) {
     QUrl Uri (QString ( "./outFile" ));
