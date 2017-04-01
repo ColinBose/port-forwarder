@@ -297,11 +297,18 @@ int  setUdp(int port, const char * servIp, sockaddr_in * serveraddr){
 -- NOTES: Call to read a udp socket and store data in given buffer
 ----------------------------------------------------------------------------------------------------------------------*/
 
-int readSock(int sd, int buffSize, char * buff, sockaddr_in * serveraddr){
+int readSock(int sd, int buffSize, char * buff, sockaddr_in * serveraddr, int timeout){
     socklen_t slen = sizeof(*serveraddr);
     int err;
+    timeval tv;
+    if(timeout > 0){
+        timeval tv;
+        tv.tv_sec = 0;
+        tv.tv_usec = timeout;
+        setsockopt(sd,SOL_SOCKET,SO_RCVTIMEO,(char*)&tv,sizeof(struct timeval));
+    }
     if (err = (recvfrom(sd, buff, buffSize, 0, (struct sockaddr*)serveraddr, &slen))< 0){
-        printf("Oh dear, something went wrong with read()! %s\n", strerror(errno));
+        //printf("Oh dear, something went wrong with read()! %s\n", strerror(errno));
 
         return 0;
     }

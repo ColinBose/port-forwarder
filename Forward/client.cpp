@@ -40,7 +40,7 @@ void connectClient(int port, const char * IP){
     }
 
 }
-void requestUdp(QString fileName, QString destAddr, int destPort, int forwardPort){
+void requestUdp(QString fileName, QString destAddr, int destPort, int forwardPort, int myPort){
     char buffer[TRANSFERSIZE];
     zero(buffer, TRANSFERSIZE);
     char src[15];
@@ -50,15 +50,50 @@ void requestUdp(QString fileName, QString destAddr, int destPort, int forwardPor
     strcpy(src, "127.0.0.1");
     strcpy(dst, destAddr.toStdString().c_str());
     addHeader(buffer, src, dst, fileName.toStdString().c_str(), true, 0, forwardPort);
+    fillSrcPort(buffer, 7777);
 
-
-    sockaddr_in client;
+    sockaddr_in client, server;
     int sendUdpSock;
-    sendUdpSock = setForwardUDP(destPort, destAddr.toStdString().c_str(),  &client);
+    sendUdpSock = setUdp(myPort,"", &server );
+    setForwardUDP(destPort, destAddr.toStdString().c_str(),  &client);
 
 
     sendDataTo(sendUdpSock, TRANSFERSIZE, buffer, &client);
 
+    int e;
+    FILE * f;
+    f = fopen("outFile", "w");
+    if(f == NULL){
+        exit(1);
+    }
+    while(1){
+
+        e = readSock(sendUdpSock, TRANSFERSIZE, buffer,&server, 100000 );
+        if(e == 0)
+            break;
+        fwrite(buffer+HEADERLEN, sizeof(char), DATASIZE, f);
+
+    }
+    printf("DONE READING");
+    fflush(stdout);
+    fclose(f);
+    close(sendUdpSock);
+
+}
+void * timeoutSocket(void * args){
+    int * sock = (int * )args;
+    long curTime;
+    long getTime = clockC() + 100000;
+    while(1){
+        curTime = clockC();
+        if(curTime > getTime){
+            close(*sock);
+            printf("Sock closed");
+            fflush(stdout);
+            exit(1);
+        }
+
+    }
 }
 
 void requestFile(QString fileName, QString destAddr, int destPort, bool unknown){

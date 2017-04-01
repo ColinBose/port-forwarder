@@ -145,12 +145,14 @@ void * udpThread(void * args){
     udpSock = setUdp(UDPPORT, "",&read);
     while(1){
         zero(buffer, TRANSFERSIZE);
-        readSock(udpSock, TRANSFERSIZE, buffer,&clientInfo );
+        readSock(udpSock, TRANSFERSIZE, buffer,&clientInfo , 0);
         fPort = getForwardInfo(buffer, fIp);
+        printf("RECEIVED DATA ON UDP SOCK MIDDLE\n");
+        fflush(stdout);
         fillSrcIp(buffer, inet_ntoa(clientInfo.sin_addr));
-        fillSrcPort(buffer, STDPORT);
+        //fillSrcPort(buffer, STDPORT);
         forwardSock = setForwardUDP(fPort, fIp, &clientSend);
-        sendDataTo(forwardSock, TRANSFERSIZE, buffer, &clientSend);
+        sendDataTo(udpSock, TRANSFERSIZE, buffer, &clientSend);
 
 
 
@@ -247,6 +249,9 @@ void * pollThread(void * args){
 
                 // Case 1: Error condition
             if (events[i].events & (EPOLLHUP | EPOLLERR)){
+                portList[events[i].data.fd%MAXLIST].sock = 0;
+                portList[events[i].data.fd%MAXLIST].val = 0;
+                portList[events[i].data.fd%MAXLIST].port = 0;
                 close(events[i].data.fd);
                 printf("Closing socket");
                 fflush(stdout);

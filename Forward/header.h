@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <QString>
-#define HEADERLEN 75
+#define HEADERLEN 80
 #define IPSIZE 15
 #define REQUESTOFFSET 50
 #define FILEOFFSET IPSIZE * 2
@@ -14,6 +14,7 @@
 #define PORTOFFSET 60
 #define RETNO 65
 #define PACKID 70
+#define SRCPORT 75
 class Header
 {
 public:
@@ -32,9 +33,11 @@ int getForwardInfo(char buffer[], char ip[]);
 void getFileName(char buffer[], char fileFill[]);
 void setSendBack(char buffer[]);
 void setUnknown(char buffer[]);
+void swapPort(char buffer[]);
 bool isUnknown(char buffer[]);
 void getIdNo(char buff[]);
 void addIdNo(char buff[], char idNo[]);
 void addPackNum(char buff[], int no);
 int getHeaderSize(char buffer[]);
+void addSrcPort(char buffer[], int port);
 #endif // HEADER_H

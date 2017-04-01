@@ -20,6 +20,7 @@ void addHeader(char buffer[], const char src[], const char dst[], const char fil
 
 
 }
+
 void fillSrcIp(char buffer[], char srcIp[]){
     memcpy(buffer, srcIp, IPSIZE);
 
@@ -57,7 +58,7 @@ void fillSrcPort(char buffer[], int port){
     char portThing[5];
     memset(portThing, '/0', 5);
     sprintf(portThing, "%d", port);
-    memcpy(buffer + PORTOFFSET, portThing, 5);
+    memcpy(buffer + SRCPORT, portThing, 5);
 
 }
 
@@ -71,6 +72,18 @@ int getForwardInfo(char buffer[],char ip[]){
 void getFileName(char buffer[], char fileFill[]){
     memcpy(fileFill, buffer+FILEOFFSET, FILELENGTH);
 }
+
+void addSrcPort(char buffer[], int port){
+    char portThing[5];
+    sprintf(portThing, "%d", port);
+    memcpy(buffer + SRCPORT, portThing, 5);
+}
+void swapPort(char buffer[]){
+    char portHold[5];
+    memcpy(portHold, buffer+SRCPORT,5);
+    memcpy(buffer+PORTOFFSET, portHold, 5);
+}
+
 void flipSrcDst(char buffer[]){
     char holdSrc[15];
     char holdDst[15];

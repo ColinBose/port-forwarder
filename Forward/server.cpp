@@ -42,10 +42,58 @@ void * listenUdp(void * args){
     int udpSock;
     sockaddr_in client,server;
     char buffer[TRANSFERSIZE];
+
+    QString fileName;
+
+    socklen_t client_len = sizeof(client);
     udpSock = setUdp(udpP,"", &server );
+    int err;
     while(1){
-        readSock(udpSock, TRANSFERSIZE, buffer, &client);
+        readSock(udpSock, TRANSFERSIZE, buffer, &client,0);
+       // recvfrom(udpSock, buffer, TRANSFERSIZE, 0, (struct sockaddr *)&client, &client_len);
+       // sendto (udpSock, buffer, err, 0,(struct sockaddr *)&client, client_len);
+
+        //endDataTo(udpSock, TRANSFERSIZE, buffer, &client );
+       // continue;
+        udpSender send;
+        swapPort(buffer);
+        memcpy(send.header, buffer, HEADERLEN);
+        getFileName(buffer, send.fileName);
+
+        send.sock = udpSock;
+        send.sender = client;
+        pthread_t udpFile;
+        pthread_create(&udpFile, NULL, sendFileUdp, (void *)&send);
+
     }
+}
+void * sendFileUdp(void * args){
+    udpSender * s = (udpSender *) args;
+    FILE * f;
+    char sendBuffer[TRANSFERSIZE];
+    int sent = 1;
+    char packIdBuff[5];
+    char headerBuff[HEADERLEN];
+    memcpy(headerBuff, s->header, HEADERLEN);
+    getIdNo(packIdBuff);
+    addIdNo(headerBuff, packIdBuff);
+    memcpy(sendBuffer, headerBuff, HEADERLEN);
+    f = fopen(s->fileName, "r");
+    int ss;
+    if(f == NULL)
+        return(void*)0;
+    while((ss=fread(sendBuffer+HEADERLEN, sizeof(char), TRANSFERSIZE - HEADERLEN, f))> 0){
+        addPackNum(sendBuffer, sent);
+
+        sent++;
+        sendDataTo(s->sock,  TRANSFERSIZE,sendBuffer, &s->sender);
+
+        if(ss < (TRANSFERSIZE - HEADERLEN))
+            break;
+
+    }
+    fclose(f);
+
 }
 
 void * listenThread(void * args){

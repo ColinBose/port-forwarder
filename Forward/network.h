@@ -52,7 +52,7 @@ int readSock(int sd, int buffSize, char * buff);
 int readSockSSL(int sd, int buffSize, char * buff, SSL *ssl);
 int sendDataTo(int sd, int buffSize, char * buff, sockaddr_in * serveraddr);
 int setupListen(int port, sockaddr_in * server);
-int readSock(int sd, int buffSize, char * buff, sockaddr_in * serveraddr);
+int readSock(int sd, int buffSize, char * buff, sockaddr_in * serveraddr, int timeout);
 void zero(char * buffer, int len);
 int setForwardUDP(int port, const char fIp[], sockaddr_in * client);
 
