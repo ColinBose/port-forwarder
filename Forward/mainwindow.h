@@ -2,6 +2,12 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QTextDocument>
+#include <QImage>
+#include <QTextCursor>
+#include <QTextImageFormat>
+#include <QFileDialog>
+#include <QImageReader>
 #include "server.h"
 #include "middle.h"
 #include "client.h"
@@ -49,6 +55,7 @@ private slots:
     Q_SLOT void drawBackground();
     void on_mainClient_clicked();
     Q_SLOT void setTextView(QString s);
+    Q_SLOT void setImageView(QString s);
     Q_SLOT void addNetwork(QString ip, int port);
     Q_SLOT void addClient(QString ip, int port);
     Q_SLOT void addPacket(QString src, QString dst, int srcPort, int dstPort, bool cache);
@@ -68,7 +75,6 @@ private slots:
     void on_secondGo_clicked();
 
     void on_pushButton_clicked();
-
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *scene, *scene2;
