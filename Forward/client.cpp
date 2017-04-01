@@ -40,22 +40,16 @@ void connectClient(int port, const char * IP){
     }
 
 }
-void requestUdp(QString fileName, QString destAddr, QString forwardIp, int destPort, int forwardPort, int myPort){
+void requestUdp(QString fileName, QString destAddr, int forwardPort, int myPort){
     char buffer[TRANSFERSIZE];
     zero(buffer, TRANSFERSIZE);
-    char src[15];
-    char dst[15];
-    zero(src, 15);
-    zero(dst, 15);
-    strcpy(src, "127.0.0.1");
-    strcpy(dst, forwardIp.toStdString().c_str());
-    addHeader(buffer, src, dst, fileName.toStdString().c_str(), true, 0, forwardPort);
+     addHeader(buffer, "","", fileName.toStdString().c_str(), true, 0, forwardPort);
     fillSrcPort(buffer, 7777);
 
     sockaddr_in client, server;
     int sendUdpSock;
     sendUdpSock = setUdp(myPort,"", &server );
-    setForwardUDP(destPort, destAddr.toStdString().c_str(),  &client);
+    setForwardUDP(forwardPort, destAddr.toStdString().c_str(),  &client);
 
 
     sendDataTo(sendUdpSock, TRANSFERSIZE, buffer, &client);

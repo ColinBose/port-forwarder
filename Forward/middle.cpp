@@ -9,6 +9,12 @@ Middle::Middle()
 {
 
 }
+struct udpInfo{
+    char ip[15];
+    int port;
+    int sPort;
+};
+
 struct forwardPorts{
     int val = 0;
     int sock = 0;
@@ -46,9 +52,44 @@ void startForwarder(){
     pthread_t accepterThread, pollerThread, udpReader;
     pthread_create(&accepterThread, NULL, acceptThread, (void *)0);
     pthread_create(&pollerThread, NULL, pollThread, (void *)0);
-    pthread_create(&udpReader, NULL, udpThread, (void *)0);
     connectServers();
+    connectUDP();
 }
+void connectUDP(){
+    FILE * f;
+    size_t len;
+    int read;
+    f = fopen("udpConfig", "r");
+    if(f == NULL){
+        printf("FILE CANT OPEN");
+        fflush(stdout);
+        exit(1);
+    }
+
+    char * line = NULL;
+    while ((read = getline(&line, &len, f)) != -1) {
+        QString s(line);
+        if(s[s.length() - 1] == '\n'){
+             s = s.left(s.length() - 1);
+        }
+        QStringList parts = s.split(" ");
+        if(parts.length() != 3)
+            continue;
+        pthread_t thr;
+        udpInfo * i = (udpInfo *)malloc(sizeof(udpInfo));
+        zero(i->ip, 15);
+        memcpy(i->ip, parts.at(0).toStdString().c_str(), 15);
+        i->port = parts.at(2).toInt();
+        i->sPort = parts.at(1).toInt();
+        printf("UDP THREAD UP");
+        fflush(stdout);
+        pthread_create(&thr, NULL, udpThread, (void *)i);
+
+    }
+
+
+}
+
 void connectServers(){
     FILE * f;
     size_t len;
@@ -137,21 +178,37 @@ int getHash(QString s, int port){
     return total % 1000;
 }
 void * udpThread(void * args){
+    udpInfo * i = (udpInfo *)args;
+    char ip[15];
+    zero(ip, 15);
+    memcpy(ip,  i->ip,15);
+    int port = i->port;
+    int sPort = i->sPort;
+
     int udpSock;
+    int fPort;
     sockaddr_in read, clientInfo, clientSend;
-    int fPort, forwardSock;
+    //int fPort, forwardSock;
     char fIp[15];
     char buffer[TRANSFERSIZE];
-    udpSock = setUdp(UDPPORT, "",&read);
+    udpSock = setUdp(sPort, "",&read);
     while(1){
         zero(buffer, TRANSFERSIZE);
         readSock(udpSock, TRANSFERSIZE, buffer,&clientInfo , 0);
-        fPort = getForwardInfo(buffer, fIp);
-        printf("RECEIVED DATA ON UDP SOCK MIDDLE\n");
-        fflush(stdout);
-        fillSrcIp(buffer, inet_ntoa(clientInfo.sin_addr));
-        //fillSrcPort(buffer, STDPORT);
-        forwardSock = setForwardUDP(fPort, fIp, &clientSend);
+        if(checkDataReturn(buffer)){
+            fPort = getForwardInfo(buffer, fIp);
+            setForwardUDP(fPort, fIp, &clientSend);
+
+
+        }
+        else{
+            fillSrcIp(buffer, inet_ntoa(clientInfo.sin_addr));
+
+            setForwardUDP(port, ip, &clientSend);
+
+        }
+       // fPort = getForwardInfo(buffer, fIp);
+
         sendDataTo(udpSock, TRANSFERSIZE, buffer, &clientSend);
 
 

@@ -418,5 +418,5 @@ void MainWindow::on_pushButton_clicked()
 {
     QString ip;
     int port;
-    requestUdp("w1", ui->clientForwardIP->text(), ip, 8000, port, 7777);
+    requestUdp("w1", ui->clientForwardIP->text(), ui->clientDestPort->text().toInt(), 7777);
 }

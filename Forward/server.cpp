@@ -79,6 +79,7 @@ void * sendFileUdp(void * args){
     memcpy(headerBuff, s->header, HEADERLEN);
     getIdNo(packIdBuff);
     addIdNo(headerBuff, packIdBuff);
+    setSendBack(headerBuff);
     memcpy(sendBuffer, headerBuff, HEADERLEN);
     f = fopen(s->fileName, "r");
     int ss;
