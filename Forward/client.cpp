@@ -87,7 +87,7 @@ void * readThread(void * args){
     char retBuffer[TRANSFERSIZE];
     FILE * outFile;
     int totalWrite = 0;
-    outFile = fopen("outFile", "w+");
+    outFile = fopen("outFile", "w");
     if(outFile == NULL){
         printf("ERROR OPENING FILE;;;QUITING");
         fflush(stdout);
