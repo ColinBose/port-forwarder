@@ -421,5 +421,9 @@ void MainWindow::on_secondGo_clicked()
 
 void MainWindow::on_pushButton_clicked()
 {
-    requestUdp("w1", "127.0.0.1", 8000, 8888,7777);
+    QString ip;
+    ip = ui->clientDestIp->text();
+    int port;
+    port = ui->clientDestPort->text().toInt();
+    requestUdp("w1", ui->clientForwardIP->text(), ip, 8000, port, 7777);
 }
