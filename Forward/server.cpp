@@ -56,6 +56,8 @@ void * listenUdp(void * args){
         //endDataTo(udpSock, TRANSFERSIZE, buffer, &client );
        // continue;
         udpSender send;
+        flipSrcDst(buffer);
+
         swapPort(buffer);
         memcpy(send.header, buffer, HEADERLEN);
         getFileName(buffer, send.fileName);

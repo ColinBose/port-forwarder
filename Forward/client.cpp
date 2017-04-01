@@ -40,7 +40,7 @@ void connectClient(int port, const char * IP){
     }
 
 }
-void requestUdp(QString fileName, QString destAddr, int destPort, int forwardPort, int myPort){
+void requestUdp(QString fileName, QString destAddr, QString forwardIp, int destPort, int forwardPort, int myPort){
     char buffer[TRANSFERSIZE];
     zero(buffer, TRANSFERSIZE);
     char src[15];
@@ -48,7 +48,7 @@ void requestUdp(QString fileName, QString destAddr, int destPort, int forwardPor
     zero(src, 15);
     zero(dst, 15);
     strcpy(src, "127.0.0.1");
-    strcpy(dst, destAddr.toStdString().c_str());
+    strcpy(dst, forwardIp.toStdString().c_str());
     addHeader(buffer, src, dst, fileName.toStdString().c_str(), true, 0, forwardPort);
     fillSrcPort(buffer, 7777);
 
@@ -71,6 +71,8 @@ void requestUdp(QString fileName, QString destAddr, int destPort, int forwardPor
         e = readSock(sendUdpSock, TRANSFERSIZE, buffer,&server, 100000 );
         if(e == 0)
             break;
+        printf("Read something\n");
+        fflush(stdout);
         fwrite(buffer+HEADERLEN, sizeof(char), DATASIZE, f);
 
     }
