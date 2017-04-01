@@ -249,9 +249,11 @@ void * pollThread(void * args){
 
                 // Case 1: Error condition
             if (events[i].events & (EPOLLHUP | EPOLLERR)){
+                QMetaObject::invokeMethod(mw, "removeNetwork", Q_ARG(QString, portList[events[i].data.fd%MAXLIST].ip), Q_ARG(int,portList[events[i].data.fd%MAXLIST].port ));
                 portList[events[i].data.fd%MAXLIST].sock = 0;
                 portList[events[i].data.fd%MAXLIST].val = 0;
                 portList[events[i].data.fd%MAXLIST].port = 0;
+
                 close(events[i].data.fd);
                 printf("Closing socket");
                 fflush(stdout);
@@ -264,6 +266,9 @@ void * pollThread(void * args){
                 err = readSockSSL(events[i].data.fd, TRANSFERSIZE, buffer, &tmp_ssl);
                 if(err <= 0){
                     QMetaObject::invokeMethod(mw, "removeNetwork", Q_ARG(QString, portList[events[i].data.fd%MAXLIST].ip), Q_ARG(int,portList[events[i].data.fd%MAXLIST].port ));
+                    portList[events[i].data.fd%MAXLIST].sock = 0;
+                    portList[events[i].data.fd%MAXLIST].val = 0;
+                    portList[events[i].data.fd%MAXLIST].port = 0;
                     epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, events);
                     printf("removing socket");
                     fflush(stdout);
