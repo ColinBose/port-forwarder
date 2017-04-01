@@ -16,6 +16,20 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    this->setFixedSize(263, 260);
+    this->setWindowTitle("Select Mode");
+    this->window()->setGeometry(
+        QStyle::alignedRect(
+            Qt::LeftToRight,
+            Qt::AlignCenter,
+            this->window()->size(),
+            qApp->desktop()->availableGeometry()
+        )
+    );
+
+    enableClient(false);
+    enableServer(false);
+    enableForwarder(false);
 }
 
 MainWindow::~MainWindow()
@@ -27,6 +41,16 @@ void MainWindow::on_mainClient_clicked()
 {
     ui->stackedWidget->setCurrentIndex(1);
     mw = this;
+    this->setFixedSize(1120, 490);
+    this->setWindowTitle("Client Mode");
+    this->window()->setGeometry(
+        QStyle::alignedRect(
+            Qt::LeftToRight,
+            Qt::AlignCenter,
+            this->window()->size(),
+            qApp->desktop()->availableGeometry()
+        )
+    );
     setHeaders();
 
 }
@@ -35,6 +59,17 @@ void MainWindow::on_mainServer_clicked()
 {
     ui->stackedWidget->setCurrentIndex(2);
     mw = this;
+
+    this->setFixedSize(275, 190);
+    this->setWindowTitle("Server Mode");
+    this->window()->setGeometry(
+        QStyle::alignedRect(
+            Qt::LeftToRight,
+            Qt::AlignCenter,
+            this->window()->size(),
+            qApp->desktop()->availableGeometry()
+        )
+    );
 }
 
 void MainWindow::on_mainForwarder_clicked()
@@ -42,6 +77,17 @@ void MainWindow::on_mainForwarder_clicked()
     ui->stackedWidget->setCurrentIndex(3);
     mw = this;
     setGraphics();
+
+    this->setFixedSize(723, 570);
+    this->setWindowTitle("Forwarder Mode");
+    this->window()->setGeometry(
+        QStyle::alignedRect(
+            Qt::LeftToRight,
+            Qt::AlignCenter,
+            this->window()->size(),
+            qApp->desktop()->availableGeometry()
+        )
+    );
 
     pthread_t ok;
    pthread_create(&ok,NULL, theThread, (void * )0);
@@ -53,11 +99,13 @@ void MainWindow::on_serverStart_clicked()
     int port, udpPort;
     udpPort = ui->udpPortEdit->text().toInt();
     port = ui->lineEdit->text().toInt();
+    enableServer(true);
     startServer(port, udpPort);
 }
 
 void MainWindow::on_startForward_clicked()
 {
+    enableForwarder(true);
     startForwarder();
 }
 void MainWindow::setTextView(QString s){
@@ -84,6 +132,7 @@ void MainWindow::on_startClient_clicked()
     int port = ui->clientForwardPort->text().toInt();
     QString ip = ui->clientForwardIP->text();
     connectClient(port, ip.toStdString().c_str());
+    enableClient(true);
     ui->startClient->setEnabled(false);
 
 }
@@ -120,6 +169,55 @@ void MainWindow::setHeaders(){
 
     ui->fileWidget->setHorizontalHeaderItem(0, new QTableWidgetItem("File"));
     ui->fileWidget->setHorizontalHeaderItem(1, new QTableWidgetItem("Type"));
+}
+
+void MainWindow::enableClient(bool shouldEnable)
+{
+    if (shouldEnable) {
+        ui->clientForwardIP->setDisabled(true);
+        ui->clientForwardPort->setDisabled(true);
+        ui->clientDestPort->setDisabled(true);
+        ui->startClient->setDisabled(true);
+
+        ui->fileWidget->setDisabled(false);
+        ui->pushButton->setDisabled(false);
+        ui->secondGo->setDisabled(false);
+        ui->webViewer->setDisabled(false);
+    } else {
+        ui->clientForwardIP->setDisabled(false);
+        ui->clientForwardPort->setDisabled(false);
+        ui->clientDestPort->setDisabled(false);
+        ui->startClient->setDisabled(false);
+
+        ui->fileWidget->setDisabled(true);
+        ui->pushButton->setDisabled(true);
+        ui->secondGo->setDisabled(true);
+        ui->webViewer->setDisabled(true);
+    }
+}
+
+void MainWindow::enableServer(bool shouldEnable)
+{
+    if (shouldEnable) {
+        ui->lineEdit->setDisabled(true);
+        ui->udpPortEdit->setDisabled(true);
+        ui->serverStart->setDisabled(true);
+    } else {
+        ui->lineEdit->setDisabled(false);
+        ui->udpPortEdit->setDisabled(false);
+        ui->serverStart->setDisabled(false);
+    }
+}
+
+void MainWindow::enableForwarder(bool shouldEnable)
+{
+    if (shouldEnable) {
+        ui->networkView->setDisabled(false);
+        ui->startForward->setDisabled(true);
+    } else{
+        ui->networkView->setDisabled(true);
+        ui->startForward->setDisabled(false);
+    }
 }
 
 void MainWindow::addFileRow(QString name, QString type){
