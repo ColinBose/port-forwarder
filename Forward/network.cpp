@@ -186,6 +186,11 @@ int readSockSSL(int sd, int buffSize, char * buff, SSL *ssl){
            // fprintf(stderr, "first failed: %s %d TOTAL ERRS: %d\n", strerror(errno),errno, totalErrs++);
            // fflush(stdout);
            // return 0;
+           if(errno == EWOULDBLOCK)
+               continue;
+           if(errno == EAGAIN)
+               continue;
+           return 0;
             break;
         }
    }
