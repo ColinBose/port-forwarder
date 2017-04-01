@@ -8,6 +8,8 @@
 #include <QTextImageFormat>
 #include <QFileDialog>
 #include <QImageReader>
+#include <QStyle>
+#include <QDesktopWidget>
 #include "server.h"
 #include "middle.h"
 #include "client.h"
@@ -49,6 +51,9 @@ public:
     void setGraphics();
     void drawGraph();
     void setHeaders();
+    void enableClient(bool shouldEnable);
+    void enableServer(bool shouldEnable);
+    void enableForwarder(bool shouldEnable);
 
 
 private slots:
@@ -69,8 +74,6 @@ private slots:
 
     void on_startForward_clicked();
     void on_startClient_clicked();
-
-    void on_getData_clicked();
 
     void on_secondGo_clicked();
 
