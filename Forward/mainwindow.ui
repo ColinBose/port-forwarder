@@ -68,21 +68,21 @@
      <widget class="QPushButton" name="startClient">
       <property name="geometry">
        <rect>
-        <x>80</x>
-        <y>200</y>
+        <x>340</x>
+        <y>130</y>
         <width>99</width>
         <height>27</height>
        </rect>
       </property>
       <property name="text">
-       <string>Go</string>
+       <string>Connect</string>
       </property>
      </widget>
      <widget class="QLineEdit" name="clientForwardIP">
       <property name="geometry">
        <rect>
-        <x>80</x>
-        <y>60</y>
+        <x>170</x>
+        <y>90</y>
         <width>113</width>
         <height>27</height>
        </rect>
@@ -94,8 +94,8 @@
      <widget class="QLineEdit" name="clientForwardPort">
       <property name="geometry">
        <rect>
-        <x>80</x>
-        <y>120</y>
+        <x>170</x>
+        <y>130</y>
         <width>113</width>
         <height>27</height>
        </rect>
@@ -104,43 +104,17 @@
        <string>7001</string>
       </property>
      </widget>
-     <widget class="QLineEdit" name="clientDestIp">
-      <property name="geometry">
-       <rect>
-        <x>280</x>
-        <y>60</y>
-        <width>113</width>
-        <height>27</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>127.0.0.1</string>
-      </property>
-     </widget>
      <widget class="QLineEdit" name="clientDestPort">
       <property name="geometry">
        <rect>
-        <x>280</x>
-        <y>120</y>
+        <x>170</x>
+        <y>170</y>
         <width>113</width>
         <height>27</height>
        </rect>
       </property>
       <property name="text">
        <string>7000</string>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="getData">
-      <property name="geometry">
-       <rect>
-        <x>290</x>
-        <y>200</y>
-        <width>99</width>
-        <height>27</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Go</string>
       </property>
      </widget>
      <widget class="QTextBrowser" name="webViewer">
@@ -159,34 +133,73 @@
         <x>10</x>
         <y>250</y>
         <width>461</width>
-        <height>321</height>
+        <height>251</height>
        </rect>
       </property>
      </widget>
      <widget class="QPushButton" name="secondGo">
       <property name="geometry">
        <rect>
-        <x>490</x>
+        <x>292</x>
         <y>540</y>
         <width>99</width>
-        <height>27</height>
+        <height>31</height>
        </rect>
       </property>
       <property name="text">
-       <string>Go</string>
+       <string>TCP</string>
       </property>
      </widget>
      <widget class="QPushButton" name="pushButton">
       <property name="geometry">
        <rect>
-        <x>230</x>
-        <y>10</y>
-        <width>99</width>
-        <height>27</height>
+        <x>100</x>
+        <y>540</y>
+        <width>101</width>
+        <height>31</height>
        </rect>
       </property>
       <property name="text">
-       <string>udptest</string>
+       <string>UDP</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_3">
+      <property name="geometry">
+       <rect>
+        <x>50</x>
+        <y>94</y>
+        <width>101</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Forwarder IP</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_4">
+      <property name="geometry">
+       <rect>
+        <x>50</x>
+        <y>134</y>
+        <width>101</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>TCP Port</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_5">
+      <property name="geometry">
+       <rect>
+        <x>50</x>
+        <y>174</y>
+        <width>101</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>UDP Port</string>
       </property>
      </widget>
     </widget>

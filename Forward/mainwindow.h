@@ -70,8 +70,6 @@ private slots:
     void on_startForward_clicked();
     void on_startClient_clicked();
 
-    void on_getData_clicked();
-
     void on_secondGo_clicked();
 
     void on_pushButton_clicked();

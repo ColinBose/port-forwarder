@@ -105,11 +105,6 @@ void MainWindow::removeNetwork(QString ip, int port){
     }
 }
 
-void MainWindow::on_getData_clicked()
-{
-    requestFile("w1", ui->clientDestIp->text(), "", ui->clientDestPort->text().toInt(), false);
-
-}
 void MainWindow::setHeaders(){
     ui->fileWidget->setRowCount(0);
     ui->fileWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -422,8 +417,6 @@ void MainWindow::on_secondGo_clicked()
 void MainWindow::on_pushButton_clicked()
 {
     QString ip;
-    ip = ui->clientDestIp->text();
     int port;
-    port = ui->clientDestPort->text().toInt();
     requestUdp("w1", ui->clientForwardIP->text(), ip, 8000, port, 7777);
 }
