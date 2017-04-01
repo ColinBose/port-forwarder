@@ -183,9 +183,9 @@ int readSockSSL(int sd, int buffSize, char * buff, SSL *ssl){
             return 0;
             break;
         default:
-            fprintf(stderr, "first failed: %s %d TOTAL ERRS: %d\n", strerror(errno),errno, totalErrs++);
-            fflush(stdout);
-            return 0;
+           // fprintf(stderr, "first failed: %s %d TOTAL ERRS: %d\n", strerror(errno),errno, totalErrs++);
+           // fflush(stdout);
+           // return 0;
             break;
         }
    }
