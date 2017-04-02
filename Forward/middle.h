@@ -33,7 +33,8 @@ struct Files{
     QString service;
     QString ip;
     int port;
-    Files(QString n, int s, QString t, QString i, int p) : fName(n), sock(s), service(t), ip(i), port(p){}
+    int myPort;
+    Files(QString n, int s, QString t, QString i, int p, int m) : fName(n), sock(s), service(t), ip(i), port(p), myPort(m){}
 };
 struct passInfo{
     QString fileName;
@@ -46,7 +47,7 @@ struct passInfo{
 void connectUDP();
 void * acceptThread(void * args);
 void * pollThread(void * args);
-void genFileList(char buffer[]);
+void genFileList(char buffer[], int myPort);
 int getHash(QString s, int sock);
 void connectServers();
 int checkForwards(char fIp[], int fPort);

@@ -301,7 +301,7 @@ void MainWindow::drawGraph(){
     for(int i = 0; i < clientList.length(); i++){
         clientList[i].pos = i;
         clientList[i].x = middle + (i - theMid)*OFFSET;
-        hPyth =  ui->networkView->width()/2 - networkList[i].x;
+        hPyth =  ui->networkView->width()/2 - clientList[i].x;
         pyth =  HYPLEN * HYPLEN - hPyth * hPyth;
         if(pyth < 0)
             pyth *= -1;

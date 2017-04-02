@@ -14,6 +14,10 @@ struct udpInfo{
     int port;
     int sPort;
 };
+struct myPorts{
+    int sock;
+    QStringList files;
+};
 
 struct forwardPorts{
     int val = 0;
@@ -22,6 +26,7 @@ struct forwardPorts{
     int port;
     SSL ssl;
     BIO sbio;
+    int myPort;
 };
 struct sockData{
     int sock;
@@ -37,6 +42,7 @@ static struct epoll_event events[EPOLLMAX], event;
 SSL_CTX *sslctx3;
 SSL *ssl3;
 BIO *sbio3;
+QList<myPorts> fileList;
 
 
 void startForwarder(){
@@ -50,10 +56,15 @@ void startForwarder(){
         sizeof s_server_session_id_context);
 
     pthread_t accepterThread, pollerThread, udpReader;
-    pthread_create(&accepterThread, NULL, acceptThread, (void *)0);
+    //pthread_create(&accepterThread, NULL, acceptThread, (void *)0);
     pthread_create(&pollerThread, NULL, pollThread, (void *)0);
     connectServers();
     connectUDP();
+    for(int i = 0; i < fileList.length(); i++){
+        pthread_t accepter;
+
+        pthread_create(&accepter, NULL, acceptThread, (void*)&fileList[i]);
+    }
 }
 void connectUDP(){
     FILE * f;
@@ -100,7 +111,9 @@ void connectServers(){
         fflush(stdout);
         exit(1);
     }
-
+    epoll_fd = epoll_create(EPOLLMAX);
+    if (epoll_fd == -1)
+        qDebug() << "Error creating EPOLL";
     char * line = NULL;
     while ((read = getline(&line, &len, f)) != -1) {
        QString liner(line);
@@ -132,6 +145,7 @@ void connectServers(){
            portList[sock%MAXLIST].val = getHash(parts[0], parts[1].toInt());
            portList[sock%MAXLIST].ssl = *ssl;
            portList[sock%MAXLIST].sbio = *sbio;
+           portList[sock%MAXLIST].myPort = parts[2].toInt();
            if(parts[1][parts.length()-1] == '\n')
                parts[1] = parts[1].left(parts[1].length() - 1);
            QString wtf = parts[1];
@@ -152,6 +166,26 @@ void connectServers(){
             QString fs, s;
             fs = parts[0];
             s = parts[1];
+
+            int index = -1;
+            for(int i = 0; i < fileList.length(); i++){
+                if(fileList[i].sock == parts[2].toInt()){
+                    index = i;
+                    break;
+                }
+            }
+            if(index == -1){
+                myPorts m;
+                if(parts.length() < 3){
+                    printf("Improperly configured file");
+                    exit(1);
+                }
+
+                m.sock = parts[2].toInt();
+                fileList.push_back(m);
+            }
+
+
            for(int i = 1; i < parts.length(); i++){
                QStringList adds = parts[i].split('-');
                if(adds.length() != 2)
@@ -159,7 +193,7 @@ void connectServers(){
                if(adds[1][(adds[1].length() -1 )] == '\n')
                    adds[1] = adds[1].left(adds[1].length() -1);
 
-               Files f(adds[0], sock, adds[1], fs, s.toInt());
+               Files f(adds[0], sock, adds[1], fs, s.toInt(), parts[2].toInt());
                fileLookup.push_back(f);
            }
        }
@@ -218,21 +252,24 @@ void * udpThread(void * args){
 }
 
 void * acceptThread(void * args){
+    myPorts * m = (myPorts *)args;
+    int thisPort = m->sock;
+    printf("Starting accepter thread %d\n", m->sock);
+    fflush(stdout);
 
-    epoll_fd = epoll_create(EPOLLMAX);
-    if (epoll_fd == -1)
-        qDebug() << "Error creating EPOLL";
     qDebug() << "Thread up";
     struct	sockaddr_in server, client;
     int sd;
     socklen_t client_len;
-       sd = setupListen(PORT+1, &server);
+       sd = setupListen(m->sock, &server);
 
     listen(sd, 5);
     client_len = sizeof(client);
     int someSock;
     char fileBuffer[TRANSFERSIZE];
     char srcIp[15];
+    genFileList(fileBuffer, m->sock);
+
     while (1){
 
         if ((someSock = accept (sd, (struct sockaddr *)&client, &client_len)) == -1)
@@ -267,20 +304,23 @@ void * acceptThread(void * args){
         portList[someSock%MAXLIST].port = DEFAULTPORT;
         portList[someSock%MAXLIST].ssl = *ssl3;
         portList[someSock%MAXLIST].sbio = *sbio3;
+        portList[someSock%MAXLIST].myPort = m->sock;
         if (epoll_ctl (epoll_fd, EPOLL_CTL_ADD, someSock, &event) == -1)
             fprintf(stderr, "socket() failed: %s\n", strerror(errno));
 
         QMetaObject::invokeMethod(mw, "addClient", Q_ARG(QString, inet_ntoa(client.sin_addr)), Q_ARG(int, DEFAULTPORT));
-        genFileList(fileBuffer);
         sendDataSSL(someSock, fileBuffer, TRANSFERSIZE, ssl3);
 
 
     }
 }
-void genFileList(char buffer[]){
+void genFileList(char buffer[], int myPort){
     QString total = "";
     for(int i  = 0 ; i < fileLookup.length(); i++){
-        total += fileLookup[i].fName + "-" + fileLookup[i].service + " ";
+        if(fileLookup[i].myPort == myPort){
+
+            total += fileLookup[i].fName + "-" + fileLookup[i].service + " ";
+        }
 
     }
     zero(buffer, TRANSFERSIZE);
@@ -334,12 +374,12 @@ void * pollThread(void * args){
                 if(isUnknown(buffer)){
                     bool found = false;
                     QString fileName = getFileName(buffer);
-                    for(int i = 0; i < fileLookup.length(); i++){
-                        if(fileLookup[i].fName == fileName){
+                    for(int z = 0; z < fileLookup.length(); z++){
+                        if(fileLookup[z].fName == fileName && fileLookup[z].myPort == portList[events[i].data.fd%MAXLIST].myPort){
                             found = true;
-                            passSock = fileLookup[i].sock;
-                            memcpy(fIp,fileLookup[i].ip.toStdString().c_str(), 15);
-                            fPort = fileLookup[i].port;
+                            passSock = fileLookup[z].sock;
+                            memcpy(fIp,fileLookup[z].ip.toStdString().c_str(), 15);
+                            fPort = fileLookup[z].port;
                             break;
                         }
                     }

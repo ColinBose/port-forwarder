@@ -49,11 +49,19 @@ Network::Network()
 ----------------------------------------------------------------------------------------------------------------------*/
 int sendData(int socket, char * message, int buffSize){
     int err;
-    err = write(socket, message, buffSize);
-    if(err < 0){
-        printf("Error writing::\n");
-        printf("socket() failed: %s\n", strerror(errno));
-        fflush(stdout);
+    int total = buffSize;
+    while(total > 0){
+        err = write(socket, message, buffSize);
+        if(err < 0){
+            if(errno == EWOULDBLOCK)
+                continue;
+            if(errno == EAGAIN)
+                continue;
+            printf("Error writing::\n");
+            printf("socket() failed: %s\n", strerror(errno));
+            fflush(stdout);
+            total -= err;
+        }
     }
     return err;
 }
