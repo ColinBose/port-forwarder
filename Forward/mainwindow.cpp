@@ -351,6 +351,7 @@ void MainWindow::drawBackground(){
         QGraphicsTextItem * io = new QGraphicsTextItem;
         io->setPos(networkList[i].x - RECTX/2, REALMID - networkList[i].y -RECTY/2);
         io->setPlainText(networkList[i].IP);
+        io->setDefaultTextColor(Qt::white);
 
 
         scene->addItem(io);
