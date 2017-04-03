@@ -41,7 +41,7 @@ void MainWindow::on_mainClient_clicked()
 {
     ui->stackedWidget->setCurrentIndex(1);
     mw = this;
-    this->setFixedSize(1120, 490);
+    this->setFixedSize(1035, 490);
     this->setWindowTitle("Client Mode");
     this->window()->setGeometry(
         QStyle::alignedRect(
@@ -365,7 +365,7 @@ void MainWindow::drawBackground(){
         QGraphicsTextItem * io = new QGraphicsTextItem;
         io->setPos(clientList[i].x - RECTX/2, REALMID - clientList[i].y -RECTY/2);
         io->setPlainText(clientList[i].IP);
-
+        io->setDefaultTextColor(Qt::white);
 
         scene->addItem(io);
 

@@ -89,12 +89,12 @@
          <rect>
           <x>120</x>
           <y>10</y>
-          <width>113</width>
+          <width>121</width>
           <height>27</height>
          </rect>
         </property>
         <property name="text">
-         <string>127.0.0.1</string>
+         <string>192.168.0.8</string>
         </property>
        </widget>
        <widget class="QLineEdit" name="clientForwardPort">
@@ -102,7 +102,7 @@
          <rect>
           <x>120</x>
           <y>50</y>
-          <width>113</width>
+          <width>121</width>
           <height>27</height>
          </rect>
         </property>
@@ -115,18 +115,18 @@
          <rect>
           <x>120</x>
           <y>90</y>
-          <width>113</width>
+          <width>121</width>
           <height>27</height>
          </rect>
         </property>
         <property name="text">
-         <string>7000</string>
+         <string>8000</string>
         </property>
        </widget>
        <widget class="QTextBrowser" name="webViewer">
         <property name="geometry">
          <rect>
-          <x>480</x>
+          <x>390</x>
           <y>10</y>
           <width>611</width>
           <height>451</height>
@@ -138,7 +138,7 @@
          <rect>
           <x>10</x>
           <y>130</y>
-          <width>461</width>
+          <width>361</width>
           <height>291</height>
          </rect>
         </property>
@@ -146,7 +146,7 @@
        <widget class="QPushButton" name="secondGo">
         <property name="geometry">
          <rect>
-          <x>370</x>
+          <x>270</x>
           <y>430</y>
           <width>99</width>
           <height>31</height>
@@ -159,7 +159,7 @@
        <widget class="QPushButton" name="pushButton">
         <property name="geometry">
          <rect>
-          <x>250</x>
+          <x>140</x>
           <y>430</y>
           <width>101</width>
           <height>31</height>
